@@ -1,18 +1,50 @@
 import { useState } from "react";
+import type { HomeProps } from "../interface/generalInterfaces";
+import type { PokemonRegionInfo } from "../interface/generalInterfaces";
+import PokedexHeader from "../components/PokedexHeader";
+import PokedexControls from "../components/PokedexControls";
+import ImageCarousel from "../components/ImageCarousel";
+import RegionMap from "../components/RegionMap";
+import EmptyState from "../components/EmptyState";
+import ErrorState from "../components/ErrorState";
 
-interface HomeProps {
-  pokemon: any;
-  error: string;
+interface HomePropsExtended extends HomeProps {
+  regionInfo: PokemonRegionInfo | null;
 }
 
-function Home({ pokemon, error }: HomeProps) {
+function Home({ pokemon, error, regionInfo }: HomePropsExtended) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showMap, setShowMap] = useState(false);
+
+  const imageLabels = ["Artwork", "Frente", "Atrás", "Shiny"];
+
+  const nextImage = () => {
+    if (showMap) return;
+    setCurrentIndex((prev) => (prev + 1) % 4);
+  };
+
+  const prevImage = () => {
+    if (showMap) return;
+    setCurrentIndex((prev) => (prev - 1 + 4) % 4);
+  };
+
+  const handleDotClick = (index: number) => {
+    setShowMap(false);
+    setCurrentIndex(index);
+  };
+
+  const toggleView = () => {
+    setShowMap(!showMap);
+  };
 
   // Si hay error, mostrarlo
   if (error) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p style={{ color: 'red', fontSize: '1.2rem' }}>{error}</p>
+      <div className="pokedex-container">
+        <PokedexHeader />
+        <div className="pokedex-screen">
+          <ErrorState message={error} />
+        </div>
       </div>
     );
   }
@@ -20,14 +52,23 @@ function Home({ pokemon, error }: HomeProps) {
   // Si no hay pokemon aún, mostrar mensaje
   if (!pokemon) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h2>Busca un Pokémon</h2>
-        <p>Usa el buscador para encontrar información sobre tu Pokémon favorito</p>
+      <div className="pokedex-container">
+        <PokedexHeader />
+        <div className="pokedex-screen">
+          <EmptyState />
+        </div>
+        <PokedexControls 
+          onPrevImage={prevImage}
+          onNextImage={nextImage}
+          onToggleView={toggleView}
+          currentImageLabel="READY"
+          showMap={showMap}
+        />
       </div>
     );
   }
 
-  // Solo cuando tenemos pokemon, definimos las imágenes
+  // Cuando tenemos pokemon, definimos las imágenes
   const images = [
     pokemon.sprites.other["official-artwork"].front_default,
     pokemon.sprites.front_default,
@@ -35,37 +76,32 @@ function Home({ pokemon, error }: HomeProps) {
     pokemon.sprites.front_shiny,
   ];
 
-  const nextImage = () => {
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
   return (
-    <div className="carousel-container">
-      <button onClick={prevImage} className="carousel-button">
-        ←
-      </button>
-      <img
-        src={images[currentIndex]}
-        alt={pokemon.name}
-        width={300}
-        className="carousel-image"
-      />
-      <button onClick={nextImage} className="carousel-button">
-        →
-      </button>
-      <div className="carousel-dots">
-        {images.map((_, index) => (
-          <span
-            key={index}
-            className={`dot ${index === currentIndex ? "active" : ""}`}
-            onClick={() => setCurrentIndex(index)}
+    <div className="pokedex-container">
+      <PokedexHeader />
+      
+      <div className="pokedex-screen">
+        {showMap && regionInfo ? (
+          <RegionMap regionInfo={regionInfo} pokemonName={pokemon.name} />
+        ) : (
+          <ImageCarousel 
+            images={images}
+            currentIndex={currentIndex}
+            pokemonName={pokemon.name}
+            onPrevImage={prevImage}
+            onNextImage={nextImage}
+            onDotClick={handleDotClick}
           />
-        ))}
+        )}
       </div>
+
+      <PokedexControls 
+        onPrevImage={prevImage}
+        onNextImage={nextImage}
+        onToggleView={toggleView}
+        currentImageLabel={showMap ? "MAP" : imageLabels[currentIndex]}
+        showMap={showMap}
+      />
     </div>
   );
 }

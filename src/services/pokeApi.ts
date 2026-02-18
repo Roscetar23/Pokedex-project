@@ -1,6 +1,9 @@
+import type { Pokemon, EvolutionChainItem, PokemonRegionInfo } from "../interface/generalInterfaces";
+
 const API_URL = import.meta.env.VITE_API_GENERAL;
+
 //Funcion Para traer los datos del pokemon
-export async function getPokemons(pokemon: string) {
+export async function getPokemons(pokemon: string): Promise<Pokemon> {
   try {
     // Apartado que trae la informacion de la url
     const res = await fetch(`${API_URL}/pokemon/${pokemon}`);
@@ -9,16 +12,17 @@ export async function getPokemons(pokemon: string) {
       throw new Error("No se encontro al pokemon");
     }
     //Devolucion de la data
-    const data = await res.json();
+    const data: Pokemon = await res.json();
     return data;
     //Error general
   } catch (err) {
+    console.error('Error fetching pokemon:', err);
     throw err;
   }
 }
 
 // funcion para obtener debilidades
-export const getWeaknesses = async (types: any[]) => {
+export const getWeaknesses = async (types: { type: { name: string; url: string } }[]): Promise<string[]> => {
   const allWeaknesses = new Set<string>();
 
   for (const typeObj of types) {
@@ -27,7 +31,7 @@ export const getWeaknesses = async (types: any[]) => {
     const typeData = await response.json();
 
     // Obtener los tipos contra los que es débil (double damage from)
-    typeData.damage_relations.double_damage_from.forEach((type: any) => {
+    typeData.damage_relations.double_damage_from.forEach((type: { name: string }) => {
       allWeaknesses.add(type.name);
     });
   }
@@ -36,7 +40,7 @@ export const getWeaknesses = async (types: any[]) => {
 };
 
 // Función para obtener la cadena evolutiva
-export const getEvolutionChain = async (speciesUrl: string) => {
+export const getEvolutionChain = async (speciesUrl: string): Promise<EvolutionChainItem[]> => {
   try {
     // 1. Obtener species data
     const speciesResponse = await fetch(speciesUrl);
@@ -47,11 +51,10 @@ export const getEvolutionChain = async (speciesUrl: string) => {
     const evolutionData = await evolutionResponse.json();
 
     // 3. Procesar la cadena evolutiva
-    const chain: any[] = [];
-    let current = evolutionData.chain;
+    const chain: EvolutionChainItem[] = [];
 
     // Función recursiva para procesar toda la cadena
-    const processChain = (chainLink: any) => {
+    const processChain = (chainLink: { species: { name: string; url: string }; evolves_to: any[] }) => {
       chain.push({
         name: chainLink.species.name,
         url: chainLink.species.url,
@@ -64,10 +67,35 @@ export const getEvolutionChain = async (speciesUrl: string) => {
       }
     };
 
-    processChain(current);
+    processChain(evolutionData.chain);
     return chain;
   } catch (error) {
     console.error("Error obteniendo evoluciones:", error);
     return [];
+  }
+};
+
+// Función para obtener información de región y generación
+export const getRegionInfo = async (speciesUrl: string): Promise<PokemonRegionInfo> => {
+  try {
+    const speciesResponse = await fetch(speciesUrl);
+    const speciesData = await speciesResponse.json();
+
+    // Obtener generación
+    const generationResponse = await fetch(speciesData.generation.url);
+    const generationData = await generationResponse.json();
+
+    return {
+      generation: generationData.name.replace('generation-', 'Gen ').toUpperCase(),
+      region: generationData.main_region?.name || 'Unknown',
+      habitat: speciesData.habitat?.name || 'Unknown'
+    };
+  } catch (error) {
+    console.error("Error obteniendo región:", error);
+    return {
+      generation: 'Unknown',
+      region: 'Unknown',
+      habitat: 'Unknown'
+    };
   }
 };

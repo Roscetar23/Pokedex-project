@@ -1,12 +1,8 @@
 import { useState } from "react";
-
-// Este apartado maneja los tipos para typeScript
-interface searchProps {
-  onSearch: (name: string) => void;
-}
+import type { SearchBarProps } from "../interface/generalInterfaces";
 
 //Funcion que se va a llamar, donde envio el tipo de dato
-function SearchBar({ onSearch }: searchProps) {
+function SearchBar({ onSearch }: SearchBarProps) {
   //Me permite guardar la informacion de busqueda y cambiarla segun el usuario
   const [search, setSearch] = useState("");
   //Funcion de busqueda y cambio a solo minusculas

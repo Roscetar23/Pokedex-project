@@ -1,13 +1,9 @@
 import "./App.css";
 import DetailsPokemon from "./pages/PokemonDetails";
-interface AppProps {
-  setPokemon: (pokemon: any) => void;
-  setError: (error: string) => void;
-  pokemon: any;
-}
+import type { AppProps } from "./interface/generalInterfaces";
 
-function App({ setPokemon, setError, pokemon }: AppProps) {
-  return <DetailsPokemon setPokemon={setPokemon} setError={setError} pokemon={pokemon}/>;
+function App({ setPokemon, setError, pokemon, setRegionInfo }: AppProps) {
+  return <DetailsPokemon setPokemon={setPokemon} setError={setError} pokemon={pokemon} setRegionInfo={setRegionInfo} />;
 }
 
 export default App;
